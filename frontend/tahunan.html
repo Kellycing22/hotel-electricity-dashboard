@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tahunan - Hotel Electricity</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/auth-guard.js"></script>
+    <script src="js/api.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --purple-dark:  #6956F6;
+            --purple-mid:   #8C4AF2;
+            --purple-light: #AA9ADB;
+            --purple-bg:    #ECECFC;
+            --purple-muted: #374151;
+        }
+        body { font-family: 'Poppins', sans-serif; background: var(--purple-bg); }
+
+        .sidebar {
+            width: 240px; min-height: 100vh;
+            background: var(--purple-dark);
+            display: flex; flex-direction: column;
+            position: fixed; left:0; top:0; bottom:0; z-index:40;
+            box-shadow: 4px 0 24px rgba(105,86,246,0.25);
+        }
+        .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.15); }
+        .sidebar-nav { padding: 16px 12px; flex: 1; }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 14px; border-radius: 10px;
+            color: rgba(255,255,255,0.55);
+            font-size: 14px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s; margin-bottom: 4px; text-decoration: none;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.15); color: #fff; }
+        .nav-item.active {
+            background: #fff; color: var(--purple-dark);
+            font-weight: 600; box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+        }
+        .nav-item svg { width:18px; height:18px; flex-shrink:0; }
+        .nav-section-label {
+            font-size:10px; font-weight:600; color: rgba(255,255,255,0.40);
+            text-transform:uppercase; letter-spacing:.08em; padding:8px 14px 4px; margin-top:8px;
+        }
+        .sidebar-footer { padding:16px 12px; border-top:1px solid rgba(255,255,255,0.15); }
+        .logout-btn {
+            display:flex; align-items:center; gap:8px;
+            width:100%; padding:8px 12px; border-radius:8px;
+            color:rgba(255,255,255,0.55); font-size:14px;
+            transition:all .2s; background:transparent; border:none; cursor:pointer;
+        }
+        .logout-btn:hover { color:#fca5a5; background:rgba(239,68,68,0.15); }
+
+        .main-wrapper { margin-left:240px; min-height:100vh; display:flex; flex-direction:column; }
+        .topbar {
+            background: rgba(255,255,255,0.80); backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(105,86,246,0.12);
+            position:sticky; top:0; z-index:30;
+            padding:0 32px; height:64px;
+            display:flex; align-items:center; justify-content:space-between;
+        }
+
+        .stat-card, .chart-card {
+            background: #fff;
+            border: 1px solid rgba(105,86,246,0.12);
+            box-shadow: 0 2px 12px rgba(105,86,246,0.08);
+            border-radius: 16px;
+        }
+        .stat-card { padding: 20px; }
+        .chart-card { padding: 24px; }
+
+        .year-btn {
+            background: var(--purple-bg);
+            border: 1px solid rgba(105,86,246,0.25);
+            color: var(--purple-dark);
+            border-radius: 10px; padding: 8px 16px;
+            font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s;
+            font-family: 'Poppins', sans-serif;
+        }
+        .year-btn:hover { background: var(--purple-dark); color: #fff; }
+
+        .paradoks-card {
+            background: rgba(251,191,36,0.06);
+            border: 1px solid rgba(251,191,36,0.25);
+            border-radius: 16px; padding: 20px;
+        }
+
+        .monthly-table th {
+            background: var(--purple-bg); color: var(--purple-dark);
+            font-size:11px; font-weight:600; text-transform:uppercase;
+            letter-spacing:.06em; padding:10px 16px; text-align:left;
+        }
+        .monthly-table td { padding:12px 16px; font-size:13px; color:#374151;
+            border-top:1px solid rgba(105,86,246,0.08); }
+        .monthly-table tr:hover td { background: var(--purple-bg); }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-white font-bold text-sm leading-tight">Energy Monitor</p>
+                <p class="text-white/50 text-xs">Hotel Electricity</p>
+            </div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <p class="nav-section-label">Main Menu</p>
+        <a href="dashboard.html" class="nav-item">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Dashboard
+        </a>
+        <a href="upload.html" class="nav-item">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            Upload Data
+        </a>
+        <p class="nav-section-label">Analisis</p>
+        <a href="prediksi.html" class="nav-item">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Prediksi & Optimasi
+        </a>
+        <a href="history.html" class="nav-item">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Riwayat Prediksi
+        </a>
+        <a href="bulanan.html" class="nav-item">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Bulanan
+        </a>
+        <a href="tahunan.html" class="nav-item active">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Tahunan
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="flex items-center gap-3 px-2 mb-3">
+            <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-white text-sm font-medium truncate" id="userName">Manager</p>
+                <p class="text-white/50 text-xs">Hotel Manager</p>
+            </div>
+        </div>
+        <button onclick="logout()" class="logout-btn">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            Logout
+        </button>
+    </div>
+</aside>
+
+<!-- ══════════════════ MAIN ══════════════════ -->
+<div class="main-wrapper">
+    <header class="topbar">
+        <div>
+            <h2 class="font-bold text-lg leading-tight" style="color:#1e1b4b;">Analisis Tahunan</h2>
+            <p class="text-xs mt-0.5 font-normal" style="color:#374151;">Tren konsumsi & biaya energi multi-tahun</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button class="year-btn" onclick="changeYear(-1)">← Prev</button>
+            <span class="font-semibold text-sm" style="color:#1e1b4b;" id="yearLabel">—</span>
+            <button class="year-btn" onclick="changeYear(+1)">Next →</button>
+        </div>
+    </header>
+
+    <main class="flex-1 p-8">
+
+        <!-- Stat cards -->
+        <div class="grid grid-cols-4 gap-5 mb-6">
+            <div class="stat-card">
+                <p class="text-xs uppercase tracking-wide mb-2" style="color:#374151;">Total Konsumsi</p>
+                <p class="text-2xl font-bold" style="color:#1e1b4b;" id="statKonsumsi">—</p>
+                <p class="text-xs mt-1" style="color:#374151;">kWh sepanjang tahun</p>
+            </div>
+            <div class="stat-card">
+                <p class="text-xs uppercase tracking-wide mb-2" style="color:#374151;">Total Biaya</p>
+                <p class="text-2xl font-bold" style="color:#1e1b4b;" id="statBiaya">—</p>
+                <p class="text-xs mt-1" style="color:#374151;" id="statBiayaSub">—</p>
+            </div>
+            <div class="stat-card">
+                <p class="text-xs uppercase tracking-wide mb-2" style="color:#374151;">Estimasi Hemat GSO</p>
+                <p class="text-2xl font-bold text-emerald-500" id="statHemat">—</p>
+                <p class="text-xs mt-1" style="color:#374151;">13,70% dari total biaya</p>
+            </div>
+            <div class="stat-card">
+                <p class="text-xs uppercase tracking-wide mb-2" style="color:#374151;">Rata-rata Harian</p>
+                <p class="text-2xl font-bold" style="color:#6956F6;" id="statAvg">—</p>
+                <p class="text-xs mt-1" style="color:#374151;">kWh per hari</p>
+            </div>
+        </div>
+
+        <!-- Paradoks card -->
+        <div class="paradoks-card mb-6">
+            <div class="flex items-start gap-4">
+                <div class="w-10 h-10 bg-amber-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-sm mb-1 text-amber-600">Paradoks Biaya vs Konsumsi (2023 → 2024)</h3>
+                    <p class="text-xs leading-relaxed" style="color:#374151;">
+                        Konsumsi listrik turun <strong class="text-emerald-600">11,3%</strong> (dari 458,72 → 406,88 kWh/hari), namun total biaya justru naik <strong class="text-red-500">3,4%</strong> (dari Rp 2,44M → Rp 2,53M).
+                        Fenomena ini disebabkan kenaikan tarif PLN yang tidak diimbangi efisiensi distribusi beban LWBP vs WBP.
+                        Optimasi GSO diproyeksikan menghemat <strong class="text-emerald-600">Rp 350 juta/tahun</strong> dengan menggeser beban ke periode LWBP.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts row 1 -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+            <div class="chart-card">
+                <h3 class="font-semibold text-sm mb-1" style="color:#1e1b4b;">Tren Konsumsi vs Biaya per Bulan</h3>
+                <p class="text-xs mb-4" style="color:#374151;">Dual axis — kWh/hari dan Rp miliar</p>
+                <canvas id="trendChart" height="200"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3 class="font-semibold text-sm mb-1" style="color:#1e1b4b;">Perbandingan Antar Tahun</h3>
+                <p class="text-xs mb-4" style="color:#374151;">Konsumsi rata-rata harian (kWh)</p>
+                <canvas id="yearCompChart" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Charts row 2 -->
+        <div class="grid grid-cols-3 gap-6 mb-6">
+            <div class="chart-card">
+                <h3 class="font-semibold text-sm mb-1" style="color:#1e1b4b;">Distribusi per Zona</h3>
+                <p class="text-xs mb-4" style="color:#374151;">Rata-rata kWh/hari</p>
+                <canvas id="zonaChart" height="180"></canvas>
+            </div>
+            <div class="chart-card col-span-2">
+                <h3 class="font-semibold text-sm mb-1" style="color:#1e1b4b;">Pola Konsumsi per Hari dalam Seminggu</h3>
+                <p class="text-xs mb-4" style="color:#374151;">Rata-rata kWh per hari — Senin hingga Minggu</p>
+                <canvas id="dayPatternChart" height="180"></canvas>
+            </div>
+        </div>
+
+        <!-- Tabel per bulan -->
+        <div class="chart-card">
+            <h3 class="font-semibold text-sm mb-4" style="color:#1e1b4b;">Ringkasan per Bulan — <span id="yearLabelTable">—</span></h3>
+            <div class="overflow-x-auto rounded-xl" style="border:1px solid rgba(105,86,246,0.10);">
+                <table class="monthly-table w-full text-left">
+                    <thead>
+                        <tr>
+                            <th>Bulan</th>
+                            <th>Avg kWh/hari</th>
+                            <th>Total Biaya</th>
+                            <th>Biaya Optimal GSO</th>
+                            <th>Hemat</th>
+                            <th>Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+if (!requireAuth()) throw new Error('Not authenticated');
+
+const user = getUser();
+if (user) document.getElementById('userName').textContent = user.username;
+
+let currentYear = new Date().getFullYear();
+let charts = {};
+
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+const gridColor = 'rgba(105,86,246,0.08)', tickColor = '#374151';
+
+function changeYear(delta) { currentYear += delta; loadYearData(); }
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function loadYearData() {
+    document.getElementById('yearLabel').textContent = currentYear;
+    document.getElementById('yearLabelTable').textContent = currentYear;
+
+    const stored   = localStorage.getItem('lastPredictionResult');
+    const pred     = stored ? JSON.parse(stored) : null;
+    const summary  = pred?.summary || {};
+    const avgDaily = summary.avg_daily      || 2404;
+    const avgBiaya = summary.avg_total_cost || 6400000;
+
+    const monthlyKwh = MONTH_NAMES.map((_, i) => {
+        const seasonal = Math.sin((i - 2) * Math.PI / 6) * 60;
+        return Math.round(avgDaily + seasonal + (Math.random() - 0.5) * 40);
+    });
+    const monthlyBiaya   = monthlyKwh.map(k => Math.round(k / avgDaily * avgBiaya * 30));
+    const monthlyOptimal = monthlyBiaya.map(b => Math.round(b * 0.863));
+
+    const totalKwh   = monthlyKwh.reduce((a,b) => a+b, 0);
+    const totalBiaya = monthlyBiaya.reduce((a,b) => a+b, 0);
+    const totalHemat = totalBiaya - monthlyOptimal.reduce((a,b) => a+b, 0);
+
+    document.getElementById('statKonsumsi').textContent  = `${(totalKwh/1000).toFixed(1)} MWh`;
+    document.getElementById('statBiaya').textContent     = `Rp ${(totalBiaya/1e9).toFixed(2)}M`;
+    document.getElementById('statBiayaSub').textContent  = `Rp ${(avgBiaya/1e6).toFixed(1)}jt rata-rata/hari`;
+    document.getElementById('statHemat').textContent     = `Rp ${(totalHemat/1e6).toFixed(0)}jt`;
+    document.getElementById('statAvg').textContent       = `${avgDaily.toFixed(0)} kWh`;
+
+    // Chart: Tren per bulan
+    destroyChart('trendChart');
+    charts['trendChart'] = new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: MONTH_NAMES,
+            datasets: [
+                { label: 'Avg kWh/hari', data: monthlyKwh,
+                  borderColor:'#6956F6', backgroundColor:'rgba(105,86,246,0.08)',
+                  fill:true, tension:0.4, yAxisID:'y' },
+                { label: 'Biaya (Rp juta)', data: monthlyBiaya.map(b => b/1e6),
+                  borderColor:'#f59e0b', backgroundColor:'transparent',
+                  tension:0.4, yAxisID:'y1' },
+                { label: 'Optimal GSO (Rp juta)', data: monthlyOptimal.map(b => b/1e6),
+                  borderColor:'#059669', backgroundColor:'transparent',
+                  borderDash:[5,4], tension:0.4, yAxisID:'y1' },
+            ]
+        },
+        options: {
+            responsive:true,
+            plugins:{ legend:{ labels:{ color:tickColor, font:{size:11} } } },
+            scales:{
+                x:{ ticks:{color:tickColor}, grid:{color:gridColor} },
+                y:{ ticks:{color:tickColor}, grid:{color:gridColor},
+                    position:'left', title:{display:true,text:'kWh/hari',color:tickColor} },
+                y1:{ ticks:{color:tickColor, callback:v=>`Rp ${v.toFixed(0)}jt`},
+                     grid:{display:false}, position:'right' }
+            }
+        }
+    });
+
+    // Chart: Perbandingan antar tahun
+    destroyChart('yearCompChart');
+    charts['yearCompChart'] = new Chart(document.getElementById('yearCompChart'), {
+        type: 'bar',
+        data: {
+            labels: ['2023','2024','2025 (proj)'],
+            datasets: [
+                { label: 'Avg kWh/hari', data:[458.72, 406.88, 372.15],
+                  backgroundColor:['rgba(105,86,246,0.70)','rgba(105,86,246,0.70)','rgba(105,86,246,0.35)'],
+                  borderRadius:8 },
+                { label: 'Biaya (Rp miliar)', data:[2.44, 2.53, 1.16],
+                  backgroundColor:['rgba(239,68,68,0.6)','rgba(239,68,68,0.6)','rgba(239,68,68,0.35)'],
+                  borderRadius:8, type:'line',
+                  borderColor:'#dc2626', fill:false, tension:0.4, yAxisID:'y1' }
+            ]
+        },
+        options: {
+            responsive:true,
+            plugins:{ legend:{ labels:{ color:tickColor, font:{size:11} } } },
+            scales:{
+                x:{ ticks:{color:tickColor}, grid:{display:false} },
+                y:{ ticks:{color:tickColor}, grid:{color:gridColor},
+                    title:{display:true,text:'kWh/hari',color:tickColor} },
+                y1:{ ticks:{color:tickColor}, grid:{display:false}, position:'right',
+                     title:{display:true,text:'Rp Miliar',color:tickColor} }
+            }
+        }
+    });
+
+    // Chart: Distribusi zona
+    destroyChart('zonaChart');
+    charts['zonaChart'] = new Chart(document.getElementById('zonaChart'), {
+        type: 'doughnut',
+        data: {
+            labels:['LWBP','WBP','Resto A','Resto B','Resto C'],
+            datasets:[{ data:[1959,445,515,156,108],
+                backgroundColor:['#6956F6','#f59e0b','#8C4AF2','#AA9ADB','#ec4899'],
+                borderColor:'#fff', borderWidth:2 }]
+        },
+        options:{
+            cutout:'60%',
+            plugins:{
+                legend:{ position:'bottom', labels:{color:tickColor,font:{size:10},padding:8} }
+            }
+        }
+    });
+
+    // Chart: Pola per hari
+    destroyChart('dayPatternChart');
+    const dayAvg = [2380,2410,2395,2420,2450,2500,2480];
+    charts['dayPatternChart'] = new Chart(document.getElementById('dayPatternChart'), {
+        type:'bar',
+        data:{
+            labels:['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'],
+            datasets:[{ label:'Avg kWh', data:dayAvg,
+                backgroundColor: dayAvg.map(v => v > 2450
+                    ? 'rgba(239,68,68,0.65)' : 'rgba(105,86,246,0.65)'),
+                borderRadius:8 }]
+        },
+        options:{
+            responsive:true,
+            plugins:{ legend:{display:false} },
+            scales:{
+                x:{ ticks:{color:tickColor}, grid:{display:false} },
+                y:{ ticks:{color:tickColor}, grid:{color:gridColor},
+                    title:{display:true,text:'kWh',color:tickColor} }
+            }
+        }
+    });
+
+    // Tabel per bulan
+    const rows = MONTH_NAMES.map((m, i) => {
+        const kwh   = monthlyKwh[i];
+        const biaya = monthlyBiaya[i];
+        const opt   = monthlyOptimal[i];
+        const hemat = biaya - opt;
+        const trend = i > 0 ? (kwh > monthlyKwh[i-1] ? '↑' : '↓') : '—';
+        const trendColor = trend === '↑' ? '#dc2626' : trend === '↓' ? '#059669' : '#374151';
+        return `<tr>
+            <td style="color:#1e1b4b;font-weight:500;">${m}</td>
+            <td style="color:#6956F6;font-weight:600;">${kwh.toLocaleString('id-ID')} kWh</td>
+            <td style="color:#374151;">Rp ${(biaya/1e6).toFixed(1)}jt</td>
+            <td style="color:#8C4AF2;font-weight:500;">Rp ${(opt/1e6).toFixed(1)}jt</td>
+            <td style="color:#059669;font-weight:500;">Rp ${(hemat/1e6).toFixed(1)}jt</td>
+            <td style="color:${trendColor};font-weight:700;font-size:16px;">${trend}</td>
+        </tr>`;
+    });
+    document.getElementById('monthlyTable').innerHTML = rows.join('');
+}
+
+function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = 'index.html';
+}
+
+loadYearData();
+</script>
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Data - Hotel Electricity Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/auth-guard.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/upload.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        :root {
+            --purple-dark:  #6956F6;
+            --purple-mid:   #8C4AF2;
+            --purple-light: #AA9ADB;
+            --purple-bg:    #ECECFC;
+            --purple-muted: #374151;
+            --sidebar-text-muted: rgba(255,255,255,0.55);
+            --sidebar-text: rgba(255,255,255,0.90);
+        }
+
+        body { font-family: 'Poppins', sans-serif; background: var(--purple-bg); }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 240px; min-height: 100vh;
+            background: var(--purple-dark);
+            display: flex; flex-direction: column;
+            position: fixed; left:0; top:0; bottom:0; z-index:40;
+            box-shadow: 4px 0 24px rgba(105,86,246,0.25);
+        }
+        .sidebar-logo {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+        }
+        .sidebar-nav { padding: 16px 12px; flex: 1; }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 14px; border-radius: 10px;
+            color: var(--sidebar-text-muted);
+            font-size: 14px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s; margin-bottom: 4px;
+            text-decoration: none;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.15); color: #fff; }
+        .nav-item.active {
+            background: #fff;
+            color: var(--purple-dark);
+            font-weight: 600;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+        }
+        .nav-item.active svg { color: var(--purple-dark); }
+        .nav-item svg { width:18px; height:18px; flex-shrink:0; }
+
+        .nav-section-label {
+            font-size:10px; font-weight:600;
+            color: rgba(255,255,255,0.40);
+            text-transform:uppercase; letter-spacing:.08em;
+            padding:8px 14px 4px; margin-top:8px;
+        }
+        .sidebar-footer {
+            padding:16px 12px;
+            border-top: 1px solid rgba(255,255,255,0.15);
+        }
+        .logout-btn {
+            display:flex; align-items:center; gap:8px;
+            width:100%; padding:8px 12px; border-radius:8px;
+            color:rgba(255,255,255,0.55); font-size:14px;
+            transition:all .2s; background:transparent; border:none; cursor:pointer;
+        }
+        .logout-btn:hover { color:#fca5a5; background:rgba(239,68,68,0.15); }
+
+        /* ── Main wrapper ── */
+        .main-wrapper { margin-left:240px; min-height:100vh; display:flex; flex-direction:column; }
+
+        /* ── Topbar ── */
+        .topbar {
+            background: rgba(255,255,255,0.80);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(105,86,246,0.12);
+            position:sticky; top:0; z-index:30;
+            padding:0 32px; height:64px;
+            display:flex; align-items:center; justify-content:space-between;
+        }
+
+        /* ── Cards ── */
+        .card {
+            background: #fff;
+            border: 1px solid rgba(105,86,246,0.12);
+            box-shadow: 0 2px 12px rgba(105,86,246,0.08);
+            border-radius: 20px;
+            padding: 28px;
+        }
+
+        /* ── Drop zone ── */
+        .drop-zone {
+            border: 2px dashed rgba(105,86,246,0.30);
+            border-radius: 14px;
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .25s;
+            background: var(--purple-bg);
+        }
+        .drop-zone:hover {
+            border-color: var(--purple-dark);
+            background: rgba(105,86,246,0.06);
+        }
+        .drop-zone.drag-over {
+            border-color: var(--purple-dark);
+            background: rgba(105,86,246,0.10);
+        }
+
+        /* ── Upload button ── */
+        .upload-btn {
+            width:100%; margin-top:20px;
+            background: var(--purple-dark);
+            color: #fff; border:none;
+            padding: 14px; border-radius: 12px;
+            font-family: 'Poppins', sans-serif;
+            font-size:14px; font-weight:600;
+            cursor:pointer; transition: all .2s;
+            box-shadow: 0 4px 12px rgba(105,86,246,0.35);
+        }
+        .upload-btn:hover { background: #5a48e0; box-shadow: 0 6px 18px rgba(105,86,246,0.45); }
+        .upload-btn:disabled { opacity:.4; cursor:not-allowed; box-shadow:none; }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-white font-bold text-sm leading-tight">Energy Monitor</p>
+                <p class="text-white/50 text-xs">Hotel Electricity</p>
+            </div>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <p class="nav-section-label">Main Menu</p>
+
+        <a href="dashboard.html" class="nav-item">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            Dashboard
+        </a>
+
+        <a href="upload.html" class="nav-item active">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
+            Upload Data
+        </a>
+
+        <p class="nav-section-label">Analisis</p>
+
+        <a href="prediksi.html" class="nav-item">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            Prediksi & Optimasi
+        </a>
+
+        <a href="history.html" class="nav-item">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Riwayat Prediksi
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="flex items-center gap-3 px-2 mb-3">
+            <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-white text-sm font-medium truncate" id="userName">Manager</p>
+                <p class="text-white/50 text-xs">Hotel Manager</p>
+            </div>
+        </div>
+        <button onclick="logout()" class="logout-btn">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            Logout
+        </button>
+    </div>
+</aside>
+
+<!-- ══════════════════ MAIN ══════════════════ -->
+<div class="main-wrapper">
+
+    <!-- Topbar -->
+    <header class="topbar">
+        <div>
+            <h2 class="font-bold text-lg leading-tight" style="color:var(--purple-dark);">Upload Data</h2>
+            <p class="text-xs mt-0.5 font-normal" style="color:#374151;">Upload dataset konsumsi energi hotel</p>
+        </div>
+        <div class="flex items-center gap-2 text-sm" style="color:#374151;">
+            <a href="dashboard.html" class="hover:text-purple-600 transition" style="color:#374151;">Dashboard</a>
+            <span>/</span>
+            <span style="color:#6956F6;font-weight:500;">Upload Data</span>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <main class="flex-1 p-8">
+        <div class="max-w-3xl mx-auto">
+
+            <!-- Upload Card -->
+            <div class="card mb-6">
+
+                <!-- Drop Zone -->
+                <div id="dropZone" class="drop-zone">
+                    <div class="mb-4">
+                        <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-3"
+                            style="background:rgba(105,86,246,0.10);">
+                            <svg class="w-8 h-8" style="color:#6956F6;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-1" style="color:#1e1b4b;">Drop file di sini</h3>
+                    <p class="text-sm mb-3" style="color:#374151;">atau klik untuk pilih file</p>
+                    <p class="text-xs" style="color:#374151;">Format: .csv, .xlsx, .xls &nbsp;•&nbsp; Maks 16MB</p>
+                    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
+                </div>
+
+                <!-- File Info -->
+                <div id="fileInfo" class="hidden mt-5 p-4 rounded-xl flex items-center justify-between"
+                    style="background:rgba(105,86,246,0.06);border:1px solid rgba(105,86,246,0.18);">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style="background:rgba(16,185,129,0.12);">
+                            <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-medium text-sm" style="color:#1e1b4b;" id="fileName"></p>
+                            <p class="text-xs" style="color:#374151;" id="fileSize"></p>
+                        </div>
+                    </div>
+                    <button onclick="clearFile()" class="transition" style="color:#374151;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#374151'">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Upload Button -->
+                <button id="uploadBtn" disabled class="upload-btn">
+                    <span id="uploadBtnText">Upload &amp; Prediksi</span>
+                </button>
+
+                <!-- Success Message -->
+                <div id="successMessage" class="hidden mt-5 p-4 rounded-xl"
+                    style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div>
+                            <h4 class="font-semibold text-sm mb-0.5 text-emerald-600">Upload &amp; Prediksi Berhasil!</h4>
+                            <p class="text-xs text-emerald-600/80" id="successDetails"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="hidden mt-5 p-4 rounded-xl"
+                    style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div>
+                            <h4 class="font-semibold text-sm mb-0.5 text-red-600">Upload Gagal</h4>
+                            <p class="text-xs text-red-500/80" id="errorDetails"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Format Info -->
+                <div class="mt-6 p-4 rounded-xl"
+                    style="background:rgba(105,86,246,0.06);border:1px solid rgba(105,86,246,0.18);">
+                    <h4 class="font-semibold text-sm mb-2 flex items-center gap-2" style="color:#6956F6;">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Format File yang Diperlukan
+                    </h4>
+                    <p class="text-xs mb-2" style="color:#6956F6;">
+                        File <strong>.csv</strong>, <strong>.xlsx</strong>, atau <strong>.xls</strong> harus memiliki kolom berikut:
+                    </p>
+                    <div class="text-xs font-mono p-3 rounded-lg overflow-x-auto leading-relaxed"
+                        style="background:var(--purple-bg);color:#6956F6;">
+                        DATE, DAY_OF_WEEK, IS_WEEKEND, IS_HOLIDAY, WEEK_OF_MONTH, MONTH,<br>
+                        LWBP_USED, LWBP_PRICE, WBP_USED, WBP_PRICE, KVARH_USED, TOTAL_PRICE,<br>
+                        TOTAL_BUILDING_ELECTRICITY, A_ELECTRICITY_USED, A_ELECTRICITY_PRICE,<br>
+                        B_ELECTRICITY_USED, B_ELECTRICITY_PRICE, C_ELECTRICITY_USED, C_ELECTRICITY_PRICE
+                    </div>
+                    <p class="text-xs mt-2" style="color:#374151;">⚠️ Minimal 14 baris data diperlukan untuk prediksi.</p>
+                </div>
+            </div>
+
+            <!-- Prediction Result (filled by upload.js) -->
+            <div id="predictionResult" class="hidden"></div>
+
+            <!-- Upload History -->
+            <div class="card mt-6">
+                <h3 class="font-bold text-base mb-4" style="color:#1e1b4b;">Riwayat Upload</h3>
+                <div id="uploadHistory" class="space-y-3">
+                    <!-- Filled by upload.js -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

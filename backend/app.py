@@ -20,9 +20,13 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-change-this'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Max 16MB upload
 
 # Enable CORS
+# ALLOWED_ORIGINS bisa diisi lebih dari satu domain, dipisah koma
+# Contoh di Railway: ALLOWED_ORIGINS=http://localhost:3000,https://your-app.vercel.app
+allowed_origins = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:3000"],
+        "origins": allowed_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
@@ -32,7 +36,7 @@ CORS(app, resources={
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(upload_bp, url_prefix='/api')
 app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
-app.register_blueprint(predict_bp) 
+app.register_blueprint(predict_bp)
 
 # Health check endpoint
 @app.route('/api/health', methods=['GET'])
@@ -77,4 +81,3 @@ if __name__ == '__main__':
 
     load_artifacts()
     app.run(host='0.0.0.0', port=port, debug=debug)
-    

@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = 'https://hotel-electricity-dashboard-production.up.railway.app/api';
 
 // Get auth token from localStorage
 function getToken() {

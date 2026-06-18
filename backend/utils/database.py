@@ -1,5 +1,5 @@
-import mysql.connector
-from mysql.connector import Error
+import pymysql
+import pymysql.cursors
 import os
 from dotenv import load_dotenv
 from contextlib import contextmanager
@@ -12,7 +12,8 @@ DB_CONFIG = {
     'user': os.getenv('DB_USER', 'root'),
     'password': os.getenv('DB_PASSWORD', ''),
     'database': os.getenv('DB_NAME', 'hotel_electricity'),
-    'port': int(os.getenv('DB_PORT', 3306))
+    'port': int(os.getenv('DB_PORT', 3306)),
+    'cursorclass': pymysql.cursors.DictCursor
 }
 
 @contextmanager
@@ -20,22 +21,22 @@ def get_db_connection():
     """Context manager for database connections"""
     connection = None
     try:
-        connection = mysql.connector.connect(**DB_CONFIG)
+        connection = pymysql.connect(**DB_CONFIG)
         yield connection
-    except Error as e:
+    except pymysql.Error as e:
         print(f"Database error: {e}")
         raise
     finally:
-        if connection and connection.is_connected():
+        if connection:
             connection.close()
 
 def execute_query(query, params=None, fetch=False):
     """Execute a single query"""
     try:
         with get_db_connection() as conn:
-            cursor = conn.cursor(dictionary=True)
+            cursor = conn.cursor()
             cursor.execute(query, params or ())
-            
+
             if fetch:
                 result = cursor.fetchall()
                 cursor.close()
@@ -45,7 +46,7 @@ def execute_query(query, params=None, fetch=False):
                 last_id = cursor.lastrowid
                 cursor.close()
                 return last_id
-    except Error as e:
+    except pymysql.Error as e:
         print(f"Query execution error: {e}")
         raise
 
@@ -58,7 +59,7 @@ def execute_many(query, data):
             conn.commit()
             cursor.close()
             return cursor.rowcount
-    except Error as e:
+    except pymysql.Error as e:
         print(f"Batch execution error: {e}")
         raise
 
@@ -211,27 +212,12 @@ def get_monthly_summary(year):
     return execute_query(query, (year,), fetch=True)
 
 # ============================================
-# UTILITY FUNCTIONS
+# PREDICTION HISTORY QUERIES
 # ============================================
 
-def test_connection():
-    """Test database connection"""
-    try:
-        with get_db_connection() as conn:
-            if conn.is_connected():
-                print("Database connection successful")
-                return True
-    except Error as e:
-        print(f"Database connection failed: {e}")
-        return False
-
-if __name__ == '__main__':
-    # Test connection
-    test_connection()
-    
 def get_prediction_history(user_id, limit=10):
     with get_db_connection() as conn:
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor()
         cursor.execute("""
             SELECT * FROM prediction_history
             WHERE user_id = %s
@@ -259,3 +245,20 @@ def save_prediction_history(data):
             data['avg_daily'], data['zona_a_avg'], data['zona_b_avg'], data['zona_c_avg']
         ))
         conn.commit()
+
+# ============================================
+# UTILITY FUNCTIONS
+# ============================================
+
+def test_connection():
+    """Test database connection"""
+    try:
+        with get_db_connection() as conn:
+            print("Database connection successful")
+            return True
+    except pymysql.Error as e:
+        print(f"Database connection failed: {e}")
+        return False
+
+if __name__ == '__main__':
+    test_connection()

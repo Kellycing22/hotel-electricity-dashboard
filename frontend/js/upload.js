@@ -99,7 +99,7 @@ function setupUploadBtn() {
 
             const token = getToken();
 
-            const response = await fetch('http://localhost:5001/api/predict/upload', {
+            const response = await fetch(`${API_BASE_URL}/predict/upload`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -287,7 +287,7 @@ async function loadUploadHistory() {
 
     try {
         const token = getToken();
-        const res   = await fetch('http://localhost:5001/api/predict/history?limit=5', {
+        const res   = await fetch(`${API_BASE_URL}/predict/history?limit=5`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 

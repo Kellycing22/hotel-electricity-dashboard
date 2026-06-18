@@ -137,7 +137,6 @@
 
 <script>
 if (!requireAuth()) throw new Error('Not authenticated');
-const API_URL = 'http://localhost:5001';
 
 // MAPE ke desimal — DB simpan dalam %, konversi ke desimal
 function mapeDesimal(mape) {
@@ -163,7 +162,7 @@ async function loadHistory() {
 
     try {
         const token = getToken();
-        const res   = await fetch(`${API_URL}/api/predict/history?limit=${limit}`, {
+        const res   = await fetch(`${API_BASE_URL}/predict/history?limit=${limit}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data  = await res.json();
